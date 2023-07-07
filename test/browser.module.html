@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<body>
+	<script src="../node_modules/tweakpane/dist/tweakpane.js"></script>
+	<script type="module">
+    import * as IvanliCnTweakpaneMultipleSelectPlugin from '../dist/ivanli-cn-tweakpane-multiple-select-plugin.module.js';
+
+		const params = {
+			prop: ['c'],
+			empty: [],
+		};
+		const pane = new Tweakpane.Pane();
+
+		// Register plugin
+		pane.registerPlugin(IvanliCnTweakpaneMultipleSelectPlugin);
+
+		// TODO: Update parameters for your plugin
+		pane.addInput(params, 'prop', {
+			view: 'multiple-select',
+			options: {
+				"A": "a",
+				"B": "b",
+				"C": "c",
+				"D": "d",
+			},
+		}).on('change', (ev) => {
+			console.log(ev.value);
+		});
+		pane.addInput(params, 'empty', {
+			view: 'multiple-select',
+			options: {
+			},
+		}).on('change', (ev) => {
+			console.log(ev.value);
+		});
+
+		window.pane = pane;
+	</script>
+</body>
+</html>

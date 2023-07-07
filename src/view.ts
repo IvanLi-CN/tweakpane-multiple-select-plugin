@@ -1,22 +1,31 @@
-import {ClassName, mapRange, Value, View, ViewProps} from '@tweakpane/core';
+import {
+	ClassName,
+	ListConstraint,
+	Value,
+	View,
+	ViewProps,
+} from '@tweakpane/core';
 
-interface Config {
-	value: Value<number>;
+interface Config<T> {
+	value: Value<T[]>;
 	viewProps: ViewProps;
+	lc: ListConstraint<T>;
 }
 
 // Create a class name generator from the view name
 // ClassName('tmp') will generate a CSS class name like `tp-tmpv`
-const className = ClassName('tmp');
+const className = ClassName('multiple-select');
 
 // Custom view class should implement `View` interface
-export class PluginView implements View {
+export class PluginView<T> implements View {
 	public readonly element: HTMLElement;
-	private value_: Value<number>;
-	private dotElems_: HTMLElement[] = [];
-	private textElem_: HTMLElement;
+	private value_: Value<T[]>;
+	private optionEls: HTMLElement[] = [];
+	private containerEl: HTMLElement;
+	private emptyEl: HTMLElement | null = null;
+	public readonly lc: ListConstraint<T>;
 
-	constructor(doc: Document, config: Config) {
+	constructor(doc: Document, config: Config<T>) {
 		// Create a root element for the plugin
 		this.element = doc.createElement('div');
 		this.element.classList.add(className());
@@ -28,10 +37,12 @@ export class PluginView implements View {
 		// Handle 'change' event of the value
 		this.value_.emitter.on('change', this.onValueChange_.bind(this));
 
+		this.lc = config.lc;
+
 		// Create child elements
-		this.textElem_ = doc.createElement('div');
-		this.textElem_.classList.add(className('text'));
-		this.element.appendChild(this.textElem_);
+		this.containerEl = doc.createElement('div');
+		this.containerEl.classList.add(className('container'));
+		this.element.appendChild(this.containerEl);
 
 		// Apply the initial value
 		this.refresh_();
@@ -45,33 +56,53 @@ export class PluginView implements View {
 	private refresh_(): void {
 		const rawValue = this.value_.rawValue;
 
-		this.textElem_.textContent = rawValue.toFixed(2);
-
-		while (this.dotElems_.length > 0) {
-			const elem = this.dotElems_.shift();
+		while (this.optionEls.length > 0) {
+			const elem = this.optionEls.shift();
 			if (elem) {
-				this.element.removeChild(elem);
+				this.containerEl.removeChild(elem);
 			}
 		}
 
 		const doc = this.element.ownerDocument;
-		const dotCount = Math.floor(rawValue);
-		for (let i = 0; i < dotCount; i++) {
-			const dotElem = doc.createElement('div');
-			dotElem.classList.add(className('dot'));
 
-			if (i === dotCount - 1) {
-				const fracElem = doc.createElement('div');
-				fracElem.classList.add(className('frac'));
-				const frac = rawValue - Math.floor(rawValue);
-				fracElem.style.width = `${frac * 100}%`;
-				fracElem.style.opacity = String(mapRange(frac, 0, 1, 1, 0.2));
-				dotElem.appendChild(fracElem);
-			}
+		if (this.lc.values.get('options').length === 0 && !this.emptyEl) {
+			this.emptyEl = doc.createElement('div');
+			this.emptyEl.classList.add(className('empty'));
+			this.emptyEl.textContent = '(empty)';
 
-			this.dotElems_.push(dotElem);
-			this.element.appendChild(dotElem);
+			this.containerEl.appendChild(this.emptyEl);
+		} else if (this.emptyEl) {
+			this.containerEl.removeChild(this.emptyEl);
+			this.emptyEl = null;
 		}
+
+		this.lc.values.get('options').forEach((item) => {
+			const optionEl = doc.createElement('label');
+			optionEl.classList.add(className('option'));
+
+			const inputEl = doc.createElement('input');
+			inputEl.classList.add(className('input'));
+			inputEl.type = 'checkbox';
+			inputEl.checked = rawValue.includes(item.value);
+			inputEl.addEventListener('input', () => {
+				let current = this.value_.rawValue;
+				if (inputEl.checked) {
+					current = [...current, item.value];
+				} else {
+					current = current.filter((v) => v !== item.value);
+				}
+				this.value_.setRawValue(current);
+			});
+			optionEl.appendChild(inputEl);
+
+			const textEl = doc.createElement('span');
+			textEl.classList.add(className('text'));
+			textEl.textContent = item.text;
+			optionEl.appendChild(textEl);
+
+			this.optionEls.push(optionEl);
+			this.containerEl.appendChild(optionEl);
+		});
 	}
 
 	private onValueChange_() {

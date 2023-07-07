@@ -1,6 +1,9 @@
 import {
 	constrainRange,
 	Controller,
+	ListConstraint,
+	ListParamsOptions,
+	normalizeListOptions,
 	PointerHandler,
 	PointerHandlerEvent,
 	Value,
@@ -9,22 +12,28 @@ import {
 
 import {PluginView} from './view';
 
-interface Config {
-	value: Value<number>;
+interface Config<T> {
+	value: Value<T[]>;
+	options: ListParamsOptions<T>;
 	viewProps: ViewProps;
 }
 
 // Custom controller class should implement `Controller` interface
-export class PluginController implements Controller<PluginView> {
-	public readonly value: Value<number>;
-	public readonly view: PluginView;
+export class PluginController<T> implements Controller<PluginView<T>> {
+	public readonly value: Value<T[]>;
+	public readonly view: PluginView<T>;
 	public readonly viewProps: ViewProps;
+	public readonly lc: ListConstraint<T>;
 
-	constructor(doc: Document, config: Config) {
+	constructor(doc: Document, config: Config<T>) {
 		this.onPoint_ = this.onPoint_.bind(this);
 
 		// Receive the bound value from the plugin
 		this.value = config.value;
+
+		const lc = new ListConstraint(normalizeListOptions<T>(config.options));
+
+		this.lc = lc;
 
 		// and also view props
 		this.viewProps = config.viewProps;
@@ -37,6 +46,7 @@ export class PluginController implements Controller<PluginView> {
 		this.view = new PluginView(doc, {
 			value: this.value,
 			viewProps: this.viewProps,
+			lc: this.lc,
 		});
 
 		// You can use `PointerHandler` to handle pointer events in the same way as Tweakpane do
@@ -47,15 +57,14 @@ export class PluginController implements Controller<PluginView> {
 	}
 
 	private onPoint_(ev: PointerHandlerEvent) {
-		const data = ev.data;
-		if (!data.point) {
-			return;
-		}
-
-		// Update the value by user input
-		const dx =
-			constrainRange(data.point.x / data.bounds.width + 0.05, 0, 1) * 10;
-		const dy = data.point.y / 10;
-		this.value.rawValue = Math.floor(dy) * 10 + dx;
+		// const data = ev.data;
+		// if (!data.point) {
+		// 	return;
+		// }
+		// // Update the value by user input
+		// const dx =
+		// 	constrainRange(data.point.x / data.bounds.width + 0.05, 0, 1) * 10;
+		// const dy = data.point.y / 10;
+		// this.value.rawValue = Math.floor(dy) * 10 + dx;
 	}
 }

@@ -1,8 +1,12 @@
 {
-  "name": "tweakpane-plugin-template",
+  "name": "@ivanli-cn/tweakpane-multiple-select-plugin",
   "version": "0.0.0",
   "description": "Plugin template for Tweakpane",
-  "main": "dist/tweakpane-plugin-template.js",
+  "main": "dist/ivanli-cn-tweakpane-multiple-select-plugin.js",
+  "exports": {
+    "require": "./dist/ivanli-cn-tweakpane-multiple-select-plugin.module.js",
+    "import": "./dist/ivanli-cn-tweakpane-multiple-select-plugin.umd.js"
+  },
   "types": "dist/types/index.d.ts",
   "author": "cocopon",
   "license": "MIT",

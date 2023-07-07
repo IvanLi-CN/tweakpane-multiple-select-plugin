@@ -1,22 +1,25 @@
 import {
 	BaseInputParams,
 	BindingTarget,
-	CompositeConstraint,
-	createRangeConstraint,
-	createStepConstraint,
 	InputBindingPlugin,
+	ListParamsOptions,
 	ParamsParsers,
+	parseListOptions,
 	parseParams,
 } from '@tweakpane/core';
 
 import {PluginController} from './controller';
 
-export interface PluginInputParams extends BaseInputParams {
-	max?: number;
-	min?: number;
-	step?: number;
-	view: 'dots';
+export interface PluginInputParams<T> extends BaseInputParams {
+	view: 'multiple-select';
+	options: ListParamsOptions<T>;
 }
+
+type MultipleSelectPluginInputParams<T> = InputBindingPlugin<
+	T[],
+	T[],
+	PluginInputParams<T>
+>;
 
 // NOTE: You can see JSDoc comments of `InputBindingPlugin` for details about each property
 //
@@ -25,12 +28,8 @@ export interface PluginInputParams extends BaseInputParams {
 // - converts `Ex` into `In` and holds it
 // - P is the type of the parsed parameters
 //
-export const TemplateInputPlugin: InputBindingPlugin<
-	number,
-	number,
-	PluginInputParams
-> = {
-	id: 'input-template',
+export const TweakpaneMultipleSelectPlugin: MultipleSelectPluginInputParams<unknown> = {
+	id: 'input-multiple-select',
 
 	// type: The plugin type.
 	// - 'input': Input binding
@@ -42,20 +41,16 @@ export const TemplateInputPlugin: InputBindingPlugin<
 	css: '__css__',
 
 	accept(exValue: unknown, params: Record<string, unknown>) {
-		if (typeof exValue !== 'number') {
-			// Return null to deny the user input
+		if (exValue != null && !Array.isArray(exValue)) {
 			return null;
 		}
 
 		// Parse parameters object
 		const p = ParamsParsers;
-		const result = parseParams<PluginInputParams>(params, {
+		const result = parseParams<PluginInputParams<unknown>>(params, {
 			// `view` option may be useful to provide a custom control for primitive values
-			view: p.required.constant('dots'),
-
-			max: p.optional.number,
-			min: p.optional.number,
-			step: p.optional.number,
+			view: p.required.constant('multiple-select'),
+			options: p.required.custom<ListParamsOptions<unknown>>(parseListOptions),
 		});
 		if (!result) {
 			return null;
@@ -63,33 +58,17 @@ export const TemplateInputPlugin: InputBindingPlugin<
 
 		// Return a typed value and params to accept the user input
 		return {
-			initialValue: exValue,
+			initialValue: exValue as unknown[],
 			params: result,
 		};
 	},
 
 	binding: {
 		reader(_args) {
-			return (exValue: unknown): number => {
+			return (exValue: unknown): unknown[] => {
 				// Convert an external unknown value into the internal value
-				return typeof exValue === 'number' ? exValue : 0;
+				return Array.isArray(exValue) ? exValue : [];
 			};
-		},
-
-		constraint(args) {
-			// Create a value constraint from the user input
-			const constraints = [];
-			// You can reuse existing functions of the default plugins
-			const cr = createRangeConstraint(args.params);
-			if (cr) {
-				constraints.push(cr);
-			}
-			const cs = createStepConstraint(args.params);
-			if (cs) {
-				constraints.push(cs);
-			}
-			// Use `CompositeConstraint` to combine multiple constraints
-			return new CompositeConstraint(constraints);
 		},
 
 		writer(_args) {
@@ -106,6 +85,7 @@ export const TemplateInputPlugin: InputBindingPlugin<
 		return new PluginController(args.document, {
 			value: args.value,
 			viewProps: args.viewProps,
+			options: args.params.options,
 		});
 	},
 };
