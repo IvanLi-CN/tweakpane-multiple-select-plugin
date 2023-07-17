@@ -2,10 +2,9 @@
   "name": "@ivanli-cn/tweakpane-multiple-select-plugin",
   "version": "0.0.0",
   "description": "Plugin template for Tweakpane",
-  "main": "dist/ivanli-cn-tweakpane-multiple-select-plugin.js",
   "exports": {
-    "require": "./dist/ivanli-cn-tweakpane-multiple-select-plugin.module.js",
-    "import": "./dist/ivanli-cn-tweakpane-multiple-select-plugin.umd.js"
+    "require": "./dist/ivanli-cn-tweakpane-multiple-select-plugin.umd.js",
+    "import": "./dist/ivanli-cn-tweakpane-multiple-select-plugin.module.js"
   },
   "types": "dist/types/index.d.ts",
   "author": "cocopon",
